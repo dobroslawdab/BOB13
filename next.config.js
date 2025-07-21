@@ -8,7 +8,6 @@ const nextConfig = {
     NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL,
     NEXT_PUBLIC_SUPABASE_ANON_KEY: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
     COINBASE_API_BASE_URL: process.env.COINBASE_API_BASE_URL,
-    WEBHOOK_URL: process.env.WEBHOOK_URL,
   },
   
   // Enable experimental features if needed
