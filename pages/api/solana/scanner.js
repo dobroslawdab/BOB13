@@ -1,22 +1,18 @@
 import SolanaScanner from '../../../lib/solanaScanner.js';
 
-// Globalny scanner instance (w produkcji lepiej użyć Redis lub DB)
 let scannerInstance = null;
 let scannerIntervalId = null;
 
 export default async function handler(req, res) {
-  // Zezwalamy tylko na POST i GET
   if (!['GET', 'POST'].includes(req.method)) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
   try {
-    // Inicjalizuj scanner jeśli nie istnieje
     if (!scannerInstance) {
       scannerInstance = new SolanaScanner();
     }
 
-    // GET - pobierz status i statystyki
     if (req.method === 'GET') {
       const { action } = req.query;
 
@@ -36,11 +32,17 @@ export default async function handler(req, res) {
           const signals = await scannerInstance.getRecentSignals(limit);
           return res.status(200).json(signals);
 
+        case 'scan-history':
+          // NOWE: Historia skanów
+          const historyLimit = parseInt(req.query.limit) || 10;
+          const scanHistory = await scannerInstance.getScanHistory(historyLimit);
+          return res.status(200).json(scanHistory);
+
         case 'scan-now':
           try {
             console.log('🔍 Manual scan requested');
-            // Jednorazowe skanowanie
-            const result = await scannerInstance.scanPrice();
+            // ZAKTUALIZOWANE: Używa scanPriceManual
+            const result = await scannerInstance.scanPriceManual();
             console.log('✅ Manual scan completed:', result);
             return res.status(200).json(result);
           } catch (scanError) {
@@ -56,7 +58,6 @@ export default async function handler(req, res) {
       }
     }
 
-    // POST - sterowanie skanerem
     if (req.method === 'POST') {
       const { action } = req.body;
 
@@ -99,14 +100,12 @@ export default async function handler(req, res) {
           });
 
         case 'restart':
-          // Zatrzymaj jeśli działa
           if (scannerIntervalId) {
             scannerInstance.stopScanning(scannerIntervalId);
             scannerIntervalId = null;
           }
 
           try {
-            // Uruchom ponownie
             scannerIntervalId = scannerInstance.startScanning();
             return res.status(200).json({
               message: 'Scanner restarted successfully',
@@ -122,8 +121,8 @@ export default async function handler(req, res) {
         case 'scan-once':
           try {
             console.log('🔍 Single scan requested via POST');
-            // Jednorazowe skanowanie bez uruchamiania cyklu
-            const scanResult = await scannerInstance.scanPrice();
+            // ZAKTUALIZOWANE: Używa scanPriceManual
+            const scanResult = await scannerInstance.scanPriceManual();
             console.log('✅ Single scan completed:', scanResult);
             return res.status(200).json({
               message: 'Manual scan completed',
