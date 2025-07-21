@@ -37,9 +37,19 @@ export default async function handler(req, res) {
           return res.status(200).json(signals);
 
         case 'scan-now':
-          // Jednorazowe skanowanie
-          const result = await scannerInstance.scanPrice();
-          return res.status(200).json(result);
+          try {
+            console.log('🔍 Manual scan requested');
+            // Jednorazowe skanowanie
+            const result = await scannerInstance.scanPrice();
+            console.log('✅ Manual scan completed:', result);
+            return res.status(200).json(result);
+          } catch (scanError) {
+            console.error('❌ Manual scan error:', scanError);
+            return res.status(500).json({
+              success: false,
+              error: 'Manual scan failed: ' + scanError.message
+            });
+          }
 
         default:
           return res.status(400).json({ error: 'Invalid action parameter' });
@@ -59,11 +69,19 @@ export default async function handler(req, res) {
             });
           }
 
-          scannerIntervalId = scannerInstance.startScanning();
-          return res.status(200).json({
-            message: 'Scanner started successfully',
-            status: 'running'
-          });
+          try {
+            console.log('🚀 Starting scanner...');
+            scannerIntervalId = scannerInstance.startScanning();
+            return res.status(200).json({
+              message: 'Scanner started successfully',
+              status: 'running'
+            });
+          } catch (startError) {
+            console.error('❌ Scanner start error:', startError);
+            return res.status(500).json({
+              error: 'Failed to start scanner: ' + startError.message
+            });
+          }
 
         case 'stop':
           if (!scannerIntervalId) {
@@ -87,20 +105,37 @@ export default async function handler(req, res) {
             scannerIntervalId = null;
           }
 
-          // Uruchom ponownie
-          scannerIntervalId = scannerInstance.startScanning();
-          return res.status(200).json({
-            message: 'Scanner restarted successfully',
-            status: 'running'
-          });
+          try {
+            // Uruchom ponownie
+            scannerIntervalId = scannerInstance.startScanning();
+            return res.status(200).json({
+              message: 'Scanner restarted successfully',
+              status: 'running'
+            });
+          } catch (restartError) {
+            console.error('❌ Scanner restart error:', restartError);
+            return res.status(500).json({
+              error: 'Failed to restart scanner: ' + restartError.message
+            });
+          }
 
         case 'scan-once':
-          // Jednorazowe skanowanie bez uruchamiania cyklu
-          const scanResult = await scannerInstance.scanPrice();
-          return res.status(200).json({
-            message: 'Manual scan completed',
-            result: scanResult
-          });
+          try {
+            console.log('🔍 Single scan requested via POST');
+            // Jednorazowe skanowanie bez uruchamiania cyklu
+            const scanResult = await scannerInstance.scanPrice();
+            console.log('✅ Single scan completed:', scanResult);
+            return res.status(200).json({
+              message: 'Manual scan completed',
+              result: scanResult
+            });
+          } catch (scanError) {
+            console.error('❌ Single scan error:', scanError);
+            return res.status(500).json({
+              message: 'Manual scan failed',
+              error: scanError.message
+            });
+          }
 
         default:
           return res.status(400).json({ error: 'Invalid action' });
@@ -108,19 +143,11 @@ export default async function handler(req, res) {
     }
 
   } catch (error) {
-    console.error('API Error:', error);
+    console.error('❌ API Error:', error);
     return res.status(500).json({ 
       error: 'Internal server error',
-      details: error.message
+      details: error.message,
+      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
     });
   }
 }
-
-// Automatyczne uruchomienie skanera przy starcie serwera (opcjonalne)
-// Odkomentuj poniższą linię jeśli chcesz automatycznie uruchamiać skaner
-// if (!scannerIntervalId && !global._scannerAutoStarted) {
-//   scannerInstance = new SolanaScanner();
-//   scannerIntervalId = scannerInstance.startScanning();
-//   global._scannerAutoStarted = true;
-//   console.log('🚀 Auto-started Solana scanner');
-// }
