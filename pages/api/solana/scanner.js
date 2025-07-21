@@ -33,17 +33,39 @@ export default async function handler(req, res) {
           return res.status(200).json(signals);
 
         case 'scan-history':
-          // NOWE: Historia skanów
-          const historyLimit = parseInt(req.query.limit) || 10;
-          const scanHistory = await scannerInstance.getScanHistory(historyLimit);
-          return res.status(200).json(scanHistory);
+          // ENHANCED: Historia skanów z debugowaniem
+          console.log('🔍 API: scan-history endpoint called');
+          try {
+            const historyLimit = parseInt(req.query.limit) || 10;
+            console.log(`API: Fetching ${historyLimit} scan history records...`);
+            
+            const scanHistory = await scannerInstance.getScanHistory(historyLimit);
+            console.log('API: Scan history result:', {
+              length: scanHistory?.length || 0,
+              hasData: scanHistory && scanHistory.length > 0,
+              sampleRecord: scanHistory?.[0] || null
+            });
+            
+            return res.status(200).json(scanHistory);
+          } catch (historyError) {
+            console.error('❌ API Error in scan-history:', historyError);
+            return res.status(500).json({ 
+              error: 'Failed to fetch scan history', 
+              details: historyError.message,
+              stack: process.env.NODE_ENV === 'development' ? historyError.stack : undefined
+            });
+          }
 
         case 'scan-now':
           try {
-            console.log('🔍 Manual scan requested');
-            // ZAKTUALIZOWANE: Używa scanPriceManual
+            console.log('🔍 Manual scan requested via GET');
+            // ENHANCED: Manual scan z lepszym logowaniem
             const result = await scannerInstance.scanPriceManual();
-            console.log('✅ Manual scan completed:', result);
+            console.log('✅ Manual scan completed:', {
+              success: result.success,
+              price: result.price,
+              error: result.error || 'none'
+            });
             return res.status(200).json(result);
           } catch (scanError) {
             console.error('❌ Manual scan error:', scanError);
@@ -121,9 +143,13 @@ export default async function handler(req, res) {
         case 'scan-once':
           try {
             console.log('🔍 Single scan requested via POST');
-            // ZAKTUALIZOWANE: Używa scanPriceManual
+            // ENHANCED: Single scan z lepszym logowaniem
             const scanResult = await scannerInstance.scanPriceManual();
-            console.log('✅ Single scan completed:', scanResult);
+            console.log('✅ Single scan completed:', {
+              success: scanResult.success,
+              price: scanResult.price,
+              error: scanResult.error || 'none'
+            });
             return res.status(200).json({
               message: 'Manual scan completed',
               result: scanResult
