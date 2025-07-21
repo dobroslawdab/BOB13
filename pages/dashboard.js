@@ -73,14 +73,39 @@ export default function SolanaDashboard() {
     }
   };
 
-  // NOWA FUNKCJA: Historia skanów
+  // ENHANCED: Historia skanów z debugowaniem
   const fetchScanHistory = async () => {
     try {
+      console.log('🔍 Frontend: Fetching scan history...');
       const response = await fetch('/api/solana/scanner?action=scan-history&limit=10');
+      
+      console.log('Frontend: API Response status:', response.status);
+      console.log('Frontend: API Response ok:', response.ok);
+      
+      if (!response.ok) {
+        throw new Error(`API returned ${response.status}: ${response.statusText}`);
+      }
+      
       const data = await response.json();
-      setScanHistory(data);
+      console.log('Frontend: API Response data:', data);
+      console.log('Frontend: Data type:', Array.isArray(data) ? 'array' : typeof data);
+      console.log('Frontend: Data length:', data?.length || 0);
+      
+      if (Array.isArray(data)) {
+        console.log('Frontend: Sample scan record:', data[0] || 'No records');
+        setScanHistory(data);
+        console.log('✅ Frontend: Scan history updated successfully');
+      } else {
+        console.error('❌ Frontend: Expected array but got:', typeof data);
+        setScanHistory([]);
+      }
     } catch (error) {
-      console.error('Error fetching scan history:', error);
+      console.error('❌ Frontend: Error fetching scan history:', error);
+      console.error('Error details:', {
+        message: error.message,
+        stack: error.stack
+      });
+      setScanHistory([]);
     }
   };
 
@@ -112,19 +137,31 @@ export default function SolanaDashboard() {
   };
 
   const scanOnce = async () => {
+    console.log('🔍 Frontend: Manual scan button clicked');
     setActionLoading(true);
     try {
+      console.log('Frontend: Calling scan-now API...');
       const response = await fetch('/api/solana/scanner?action=scan-now');
+      console.log('Frontend: Scan response status:', response.status);
+      
       const data = await response.json();
+      console.log('Frontend: Scan response data:', data);
       
       if (response.ok) {
+        console.log('Frontend: Scan successful, refreshing data...');
         await refreshData();
         alert(`Skanowanie zakończone! Cena: $${data.price}`);
+        
+        // Dodatkowe odświeżenie historii skanów po manualnym skanie
+        console.log('Frontend: Additional scan history refresh...');
+        setTimeout(() => {
+          fetchScanHistory();
+        }, 1000); // Odczekaj sekundę i odśwież historię
       } else {
         alert('Error: ' + data.error);
       }
     } catch (error) {
-      console.error('Error scanning:', error);
+      console.error('❌ Frontend: Error scanning:', error);
       alert('Error: ' + error.message);
     } finally {
       setActionLoading(false);
@@ -132,6 +169,7 @@ export default function SolanaDashboard() {
   };
 
   const refreshData = async () => {
+    console.log('🔄 Frontend: Refreshing all data...');
     setLoading(true);
     await Promise.all([
       fetchStatus(),
@@ -143,12 +181,15 @@ export default function SolanaDashboard() {
       fetchScanHistory() // NOWE
     ]);
     setLoading(false);
+    console.log('✅ Frontend: Data refresh completed');
   };
 
   useEffect(() => {
+    console.log('🚀 Frontend: Component mounted, initial data load...');
     refreshData();
     
     const interval = setInterval(() => {
+      console.log('⏰ Frontend: Auto-refresh triggered');
       fetchStatus();
       fetchStats();
       fetchSignals();
@@ -157,7 +198,10 @@ export default function SolanaDashboard() {
       fetchScanHistory(); // NOWE - odświeża historię skanów
     }, 30000);
 
-    return () => clearInterval(interval);
+    return () => {
+      console.log('🛑 Frontend: Component unmounted, clearing interval');
+      clearInterval(interval);
+    };
   }, []);
 
   // Helper functions...
@@ -258,7 +302,7 @@ export default function SolanaDashboard() {
           </p>
         </div>
 
-        {/* Status i kontrola - jak wcześniej */}
+        {/* Status i kontrola */}
         <div className="grid md:grid-cols-2 gap-6 mb-8">
           <div className="bg-white rounded-lg shadow p-6">
             <h2 className="text-xl font-semibold mb-4">🎛️ Scanner Control</h2>
@@ -304,7 +348,7 @@ export default function SolanaDashboard() {
             </div>
           </div>
 
-          {/* Statystyki - jak wcześniej */}
+          {/* Statystyki */}
           <div className="bg-white rounded-lg shadow p-6">
             <h2 className="text-xl font-semibold mb-4">📊 Current Stats</h2>
             {loading ? (
@@ -358,94 +402,38 @@ export default function SolanaDashboard() {
           </div>
         </div>
 
-        {/* Trend Analysis - jak wcześniej (skrócone dla miejsca) */}
-        {trendStatus && (
-          <div className="grid md:grid-cols-2 gap-6 mb-8">
-            <div className="bg-white rounded-lg shadow p-6">
-              <h2 className="text-xl font-semibold mb-4">📈 Current Trend Status</h2>
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="font-medium">Current Trend:</span>
-                  <div className="flex items-center">
-                    <span className="text-2xl mr-2">{getTrendEmoji(trendStatus.current_trend)}</span>
-                    <span className={`font-bold ${getSignalColor(trendStatus.current_trend)}`}>
-                      {trendStatus.current_trend.toUpperCase()}
-                    </span>
-                  </div>
-                </div>
-
-                <div className="flex justify-between">
-                  <span className="font-medium">Trend Duration:</span>
-                  <span className="font-semibold">
-                    {formatDuration(trendStatus.trend_duration_minutes)}
-                  </span>
-                </div>
-
-                {trendStatus.trend_strength && (
-                  <div className="border-t pt-3 mt-3">
-                    <div className="flex justify-between">
-                      <span className="font-medium">Trend Strength:</span>
-                      <span className={`font-semibold ${
-                        trendStatus.trend_strength.strength === 'strong' ? 'text-green-600' :
-                        trendStatus.trend_strength.strength === 'moderate' ? 'text-yellow-600' : 'text-red-600'
-                      }`}>
-                        {trendStatus.trend_strength.strength.toUpperCase()}
-                      </span>
-                    </div>
-                    <div className="text-xs text-gray-500 mt-1">
-                      EMA Distance: {trendStatus.trend_strength.percentage?.toFixed(3)}%
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Trading Signals - skrócone */}
-            <div className="bg-white rounded-lg shadow p-6">
-              <h2 className="text-xl font-semibold mb-4">🎯 Trading Signals</h2>
-              {tradingSignals && tradingSignals.recommendation ? (
-                <div className="bg-blue-50 p-3 rounded-lg">
-                  <div className="flex justify-between items-center mb-1">
-                    <span className="font-bold text-blue-800">
-                      {tradingSignals.recommendation.action}
-                    </span>
-                    <span className={`text-sm px-2 py-1 rounded ${
-                      tradingSignals.recommendation.confidence === 'HIGH' ? 'bg-blue-100 text-blue-800' :
-                      'bg-gray-100 text-gray-800'
-                    }`}>
-                      {tradingSignals.recommendation.confidence}
-                    </span>
-                  </div>
-                  <p className="text-sm text-blue-700">
-                    {tradingSignals.recommendation.message}
-                  </p>
-                </div>
-              ) : (
-                <div className="text-center py-8 text-gray-500">
-                  Loading trading signals...
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* NOWA SEKCJA: Scan History */}
+        {/* ENHANCED: Scan History z lepszym debugowaniem */}
         <div className="bg-white rounded-lg shadow p-6 mb-8">
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-xl font-semibold">🔬 Scan History</h2>
-            <button
-              onClick={refreshData}
-              disabled={loading}
-              className="bg-gray-600 text-white py-1 px-3 rounded hover:bg-gray-700 disabled:bg-gray-400"
-            >
-              {loading ? 'Loading...' : 'Refresh'}
-            </button>
+            <div className="flex gap-2">
+              <button
+                onClick={fetchScanHistory}
+                disabled={loading}
+                className="bg-blue-600 text-white py-1 px-3 rounded hover:bg-blue-700 disabled:bg-gray-400"
+              >
+                Refresh History
+              </button>
+              <button
+                onClick={refreshData}
+                disabled={loading}
+                className="bg-gray-600 text-white py-1 px-3 rounded hover:bg-gray-700 disabled:bg-gray-400"
+              >
+                {loading ? 'Loading...' : 'Refresh All'}
+              </button>
+            </div>
           </div>
           
           {loading ? (
-            <div className="text-center py-8">Loading scan history...</div>
+            <div className="text-center py-8">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+              <p className="mt-2">Loading scan history...</p>
+            </div>
           ) : scanHistory.length > 0 ? (
             <div className="overflow-x-auto">
+              <div className="mb-4 text-sm text-gray-600">
+                Found {scanHistory.length} scan records
+              </div>
               <table className="w-full table-auto text-sm">
                 <thead>
                   <tr className="bg-gray-50">
@@ -510,12 +498,22 @@ export default function SolanaDashboard() {
             </div>
           ) : (
             <div className="text-center py-8 text-gray-500">
-              No scans performed yet. Click "Scan Once" to test!
+              <div className="mb-4">
+                <span className="text-4xl">🔍</span>
+              </div>
+              <h3 className="text-lg font-semibold mb-2">No scan history found</h3>
+              <p className="mb-4">No scans have been performed yet.</p>
+              <div className="space-y-2 text-sm">
+                <p>To create scan history:</p>
+                <p>1. Click <strong>"Scan Once"</strong> to perform a manual scan</p>
+                <p>2. Or start the automatic scanner</p>
+                <p>3. Check browser console for debugging info</p>
+              </div>
             </div>
           )}
         </div>
 
-        {/* EMA Signals - skrócone dla miejsca */}
+        {/* EMA Signals */}
         <div className="bg-white rounded-lg shadow p-6 mb-8">
           <h2 className="text-xl font-semibold mb-4">📡 Recent EMA Signals</h2>
           {loading ? (
