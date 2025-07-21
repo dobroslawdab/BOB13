@@ -1,0 +1,128 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Global styles */
+html,
+body {
+  padding: 0;
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Oxygen,
+    Ubuntu, Cantarell, Fira Sans, Droid Sans, Helvetica Neue, sans-serif;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+/* Custom components */
+@layer components {
+  .btn-primary {
+    @apply bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors font-medium;
+  }
+  
+  .btn-secondary {
+    @apply bg-gray-600 text-white px-6 py-2 rounded-lg hover:bg-gray-700 transition-colors font-medium;
+  }
+  
+  .card {
+    @apply bg-white rounded-lg shadow-md p-6;
+  }
+  
+  .signal-bullish {
+    @apply text-green-600 font-bold;
+  }
+  
+  .signal-bearish {
+    @apply text-red-600 font-bold;
+  }
+  
+  .price-display {
+    @apply font-mono text-lg font-bold;
+  }
+  
+  .status-running {
+    @apply text-green-600 font-bold;
+  }
+  
+  .status-stopped {
+    @apply text-red-600 font-bold;
+  }
+}
+
+/* Loading animation */
+.loading {
+  @apply animate-pulse;
+}
+
+/* Scanner status indicator */
+.scanner-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.scanner-dot.running {
+  @apply bg-green-500 animate-ping;
+}
+
+.scanner-dot.stopped {
+  @apply bg-red-500;
+}
+
+/* Table styles */
+.data-table {
+  @apply w-full table-auto;
+}
+
+.data-table th {
+  @apply px-4 py-2 text-left bg-gray-50 font-semibold;
+}
+
+.data-table td {
+  @apply px-4 py-2 border-t;
+}
+
+.data-table tr:nth-child(even) {
+  @apply bg-gray-50;
+}
+
+/* Responsive utilities */
+@media (max-width: 768px) {
+  .container {
+    @apply px-4;
+  }
+  
+  .data-table {
+    @apply text-sm;
+  }
+  
+  .data-table th,
+  .data-table td {
+    @apply px-2 py-1;
+  }
+}
+
+/* Custom scrollbar */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 8px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 10px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #888;
+  border-radius: 10px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #555;
+}
